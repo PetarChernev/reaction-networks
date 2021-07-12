@@ -76,6 +76,49 @@ class ReactionNetwork:
     def constant(self, masses):
         raise NotImplementedError()
 
+    @staticmethod
+    def string_from_stoichiometry(left_stoichiometry, right_stoichiometry, variables):
+        reactions = []
+        for row in range(len(left_stoichiometry)):
+            left_side = []
+            for i in range(len(variables)):
+                term_str = ''
+                if left_stoichiometry[row][i]:
+                    if left_stoichiometry[row][i] != 1:
+                        term_str += str(left_stoichiometry[row][i])
+                    term_str += variables[i].upper()
+                if term_str:
+                    left_side.append(term_str)
+            left_side = ' + '.join(left_side)
+
+            right_side = []
+            for i in range(len(variables)):
+                term_str = ''
+                if right_stoichiometry[row][i]:
+                    if right_stoichiometry[row][i] != 1:
+                        term_str += str(right_stoichiometry[row][i])
+                    term_str += variables[i].upper()
+                if term_str:
+                    right_side.append(term_str)
+            if right_side:
+                right_side = ' + '.join(right_side)
+            else:
+                right_side = 'Q'
+            reactions.append(left_side + '->' + right_side)
+        reactions = '\n'.join(reactions)
+        return reactions
+
+    @staticmethod
+    def from_stoichiometry(left_stoichiometry, right_stoichiometry, variables, external_reactants, rates):
+        string = ReactionNetwork.string_from_stoichiometry(left_stoichiometry, right_stoichiometry, variables)
+        return ReactionNetwork(string, rates, external_reactants=external_reactants)
+
+    def __eq__(self, other):
+        for r in self.reactions:
+            matching_reactions = [other_r for other_r in other.reactions if other_r == r]
+            if len(matching_reactions) != 1:
+                return False
+        return True
 
 class XSReactionNetwork(ReactionNetwork):
     """
@@ -108,7 +151,7 @@ class XSReactionNetwork(ReactionNetwork):
             rates = {self.RATE_NAMES[i]: self.rates[i] for i in range(len(self.rates))}
             rates_str = f""" (${', '.join(rate_name + '=' + str(rate_value)
                                           for rate_name, rate_value in rates.items())}$)"""
-            rates_str = re.sub(r'0+\d', '', rates_str)
+            rates_str = re.sub(r'0+[1-9]', '', rates_str)
         else:
             rates_str = ''
         return name + rates_str

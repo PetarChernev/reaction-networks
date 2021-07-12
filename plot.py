@@ -15,7 +15,7 @@ plt.rc('text', usetex=True)
 
 
 TIME_FORMAT = '%H:%M:%S'
-COMPARISON_DELTA = 0.001
+COMPARISON_DELTA = 0.0005
 
 
 def plot_logistic_gompertz_mixed_asymptote_1(k_logistic,
@@ -48,6 +48,7 @@ def plot_networks(*networks: XSReactionNetwork, initial_x: float = 0.1, max_t: f
     for network in networks:
         solution = network.solve_ivp(initial_x, c=network.constant([0, 1]), max_t=max_t)
         network.plot_x(solution, show=False)
+    plt.ylabel('$x(t)$')
     plt.legend()
     plt.show()
 
@@ -70,7 +71,7 @@ def plot_state_space(network, x_min, x_max, s_min, s_max, resolution):
     q = ax.quiver(x_states, s_states, x_vel, s_vel, vel_magnitude, angles='xy')
     cb = plt.colorbar(q)
     cb.set_label('Velocity magnitude')
-    plt.title(r'Phase space direction and velocity for the logistic model ($k=1$)')
+    plt.title(r'Vector field for the Gompertz model ($k=1, \nu=1$)')
     plt.show()
 
 
@@ -80,19 +81,18 @@ def plot_xsnetwork_crosses_by_last_rate(xsnetwork_cls_1,
                                         rate_1_max,
                                         rate_2_min,
                                         rate_2_max,
-                                        resolution,
+                                        resolution_1,
+                                        resolution_2,
                                         x_0=0.1,
                                         x_inf=1,
                                         max_t=10,
                                         t_step=0.05):
-    rate_1_array = np.linspace(rate_1_min, rate_1_max, resolution)
-    rate_2_array = np.linspace(rate_2_min, rate_2_max, resolution)
+    rate_1_array = np.linspace(rate_1_min, rate_1_max, resolution_1)
+    rate_2_array = np.linspace(rate_2_min, rate_2_max, resolution_2)
     rate_combinations = np.array(np.meshgrid(rate_1_array, rate_2_array)).reshape(2, -1)
 
     network_1_other_rates = [1] * (len(xsnetwork_cls_1.RATE_NAMES) - 1)
     network_2_other_rates = [1] * (len(xsnetwork_cls_2.RATE_NAMES) - 1)
-
-    colors = []
 
     start_time = time()
     counter = 0
@@ -123,42 +123,8 @@ def plot_xsnetwork_crosses_by_last_rate(xsnetwork_cls_1,
                   f" Elapsed time: {elapsed_time} |"
                   f" Expected time to finish: {expected_time}")
 
-    with open('colors', 'wb') as file:
+    with open('colors_бк', 'wb') as file:
         pickle.dump({'x1': x_1s, 'x2': x_2s}, file)
-
-    for i in range(len(x_1s)):
-        x_1 = x_1s[i]
-        x_2 = x_2s[i]
-        min_length = min([len(x_1), len(x_2)])
-        x_1 = x_1[:min_length]
-        x_2 = x_2[:min_length]
-        difference = x_1 - x_2
-        difference = difference[abs(difference) > COMPARISON_DELTA]
-        if np.all(difference > 0):
-            colors.append([0, 150, 0])
-        elif np.all(difference < 0):
-            colors.append([0, 0, 150])
-        else:
-            colors.append([150, 0, 0])
-
-    colors = np.array(colors).reshape(resolution, resolution, 3)
-    plt.imshow(colors)
-    plt.show()
-
-
-if __name__ == '__main__':
-    # network = LogisticReactionNetwork([1])
-    # plot_state_space(network, 1, 10, 1, 10, 10)
-
-    # plot_xsnetwork_crosses_by_last_rate(LogisticReactionNetwork,
-    #                                     GompertzReactionNetwork,
-    #                                     0.1, 20, 0.1, 3, 64, 20, 0.05)
-
-    with open('colors', 'rb') as file:
-        data = pickle.load(file)
-
-    x_1s = data['x1']
-    x_2s = data['x2']
 
     colors = []
     for i in range(len(x_1s)):
@@ -168,22 +134,93 @@ if __name__ == '__main__':
         x_1 = x_1[:min_length]
         x_2 = x_2[:min_length]
         difference = x_1 - x_2
-        difference = difference[abs(difference) > COMPARISON_DELTA]
-        if np.all(difference > 0):
+        #difference = difference[abs(difference) > COMPARISON_DELTA]
+        if np.all(difference >= 0):
             colors.append([0, 150, 0])
-        elif np.all(difference < 0):
+        elif np.all(difference <= 0):
             colors.append([0, 0, 150])
         else:
             colors.append([150, 0, 0])
 
-    colors = np.array(colors).reshape(64, 64, 3)
-    plt.imshow(colors, origin='lower', extent=[0.1, 20, 0.1, 3])
+    colors = np.array(colors).reshape(resolution_2, resolution_1, 3)
+    plt.imshow(colors, origin='lower', extent=[rate_1_min, rate_1_max, rate_2_min, rate_2_max])
     plt.xlabel('$k_L$')
-    plt.ylabel('$k_G$')
-    legend_elements = [Line2D([0], [0], lw=0, marker='s', color=[0,150/255,0], markerfacecolor=[0,150/255,0], label=r'$x_L(t) > x_G(t), \forall t > 0$', markersize=3),
-                       Line2D([0], [0], lw=0, marker='s', color=[0, 0, 150 / 255], markerfacecolor=[0, 0, 150 / 255], label=r'$x_L(t) < x_G(t), \forall t > 0$', markersize=3),
-                       Line2D([0], [0], lw=0, marker='s', color=[150 / 255, 0, 0],markerfacecolor=[150 / 255, 0, 0], label=r'$\exists t: x_L(t) = x_G(t)$', markersize=3),
+    plt.ylabel(r'$\nu$')
+    legend_elements = [Line2D([0], [0], lw=0, marker='s', color=[0, 150 / 255, 0], markerfacecolor=[0, 150 / 255, 0],
+                              label=r'$x_L(t) > x_G(t), \forall t > 0$', markersize=3),
+                       Line2D([0], [0], lw=0, marker='s', color=[0, 0, 150 / 255], markerfacecolor=[0, 0, 150 / 255],
+                              label=r'$x_L(t) < x_G(t), \forall t > 0$', markersize=3),
+                       Line2D([0], [0], lw=0, marker='s', color=[150 / 255, 0, 0], markerfacecolor=[150 / 255, 0, 0],
+                              label=r'$\exists t: x_L(t) = x_G(t)$', markersize=3),
                        ]
     plt.legend(handles=legend_elements, bbox_to_anchor=(0.8, -0.3))
-    plt.title(r'Logistic ($k_L$) vs. Gompertz ($\nu=1, k_G$) for different $k_L$ and $k_G$ ($x(0)=0.1, x(\infty)=1$)')
+    plt.title(r'Logistic ($k_L$) vs. Gompertz ($k_G=1, \nu$) for different $k_L$ and $\nu$ ($x(0)=0.1, x(\infty)=1$)')
     plt.show()
+
+
+if __name__ == '__main__':
+    # network = LogisticReactionNetwork([1])
+    # plot_state_space(network, 1, 10, 1, 10, 10)
+
+    xsnetwork_cls_1 = LogisticReactionNetwork
+    xsnetwork_cls_2 = GompertzReactionNetwork
+    rate_1_min = 0.1
+    rate_1_max = 20
+    rate_2_min = 0.1
+    rate_2_max = 20
+    resolution_1 = 256
+    resolution_2 = 256
+    x_0 = 0.1
+    x_inf = 1
+    max_t = 10
+    t_step = 0.05
+    # plot_xsnetwork_crosses_by_last_rate(xsnetwork_cls_1,
+    #                                     xsnetwork_cls_2,
+    #                                     rate_1_min,
+    #                                     rate_1_max,
+    #                                     rate_2_min,
+    #                                     rate_2_max,
+    #                                     resolution_1,
+    #                                     resolution_2,
+    #                                     x_0,
+    #                                     x_inf,
+    #                                     max_t,
+    #                                     t_step)
+
+    with open('colors_бк', 'rb') as file:
+        data = pickle.load(file)
+
+    x_1s = data['x1']
+    x_2s = data['x2']
+    print('laoded data')
+    colors = []
+    for i in range(len(x_1s)):
+        x_1 = x_1s[i]
+        x_2 = x_2s[i]
+        min_length = min([len(x_1), len(x_2)])
+        x_1 = x_1[:min_length]
+        x_2 = x_2[:min_length]
+        difference = x_1 - x_2
+        difference = difference[abs(difference) > COMPARISON_DELTA]
+        if np.all(difference >= 0):
+            colors.append([0, 150, 0])
+        elif np.all(difference <= 0):
+            colors.append([0, 0, 150])
+        else:
+            colors.append([150, 0, 0])
+    print('determined colors')
+    colors = np.array(colors).reshape(resolution_2, resolution_1, 3)
+    plt.imshow(np.transpose(colors, [1,0,2]), origin='lower', extent=[rate_1_min, rate_1_max, rate_2_min, rate_2_max])
+    plt.xlabel('$k_L$')
+    plt.ylabel(r'$\nu$')
+    legend_elements = [Line2D([0], [0], lw=0, marker='s', color=[0, 150 / 255, 0], markerfacecolor=[0, 150 / 255, 0],
+                              label=r'$x_L(t) > x_G(t), \forall t > 0$', markersize=3),
+                       Line2D([0], [0], lw=0, marker='s', color=[0, 0, 150 / 255], markerfacecolor=[0, 0, 150 / 255],
+                              label=r'$x_L(t) < x_G(t), \forall t > 0$', markersize=3),
+                       Line2D([0], [0], lw=0, marker='s', color=[150 / 255, 0, 0], markerfacecolor=[150 / 255, 0, 0],
+                              label=r'$\exists t: x_L(t) = x_G(t)$', markersize=3),
+                       ]
+    plt.legend(handles=legend_elements, loc='lower right')
+    plt.title(r'Logistic ($k_L$) vs. Gompertz ($k_G=1, \nu$) for different $k_L$ and $\nu$ ($x(0)=0.1, x(\infty)=1$)')
+    plt.show()
+

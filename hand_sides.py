@@ -14,6 +14,9 @@ class HandSide:
     def __str__(self):
         return self.formula
 
+    def __eq__(self, other):
+        return self.stoichiometry == other.stoichiometry
+
 
 class LeftHandSide(HandSide):
     pass

@@ -43,6 +43,9 @@ class Reaction:
     def expand_powers(formula: str):
         return re.sub(r"(\d+)([A-Z])", lambda m: ' + '.join(m.group(2)*int(m.group(1))), formula)
 
+    def __eq__(self, other):
+        return self.left == other.left and self.right == other.right
+
 
 if __name__ == "__main__":
     reaction = Reaction("A + B -> C + B", 1)

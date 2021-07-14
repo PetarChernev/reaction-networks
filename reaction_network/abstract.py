@@ -24,8 +24,16 @@ class ReactionNetwork:
         self.internal_reactants = list(sorted(self.reactant_set - self.external_reactants))
         if self.INTERNAL_REACTANTS_NUM is not None:
             assert len(self.internal_reactants) == self.INTERNAL_REACTANTS_NUM
+
+        self.left_stoichiometry = [r.get_left_stoichiometry_matrix_row(self.internal_reactants) for r in self.reactions]
+        self.left_stoichiometry = np.vstack(self.left_stoichiometry).T
+        
+        self.right_stoichiometry = [r.get_right_stoichiometry_matrix_row(self.internal_reactants) for r in self.reactions]
+        self.right_stoichiometry = np.vstack(self.right_stoichiometry).T
+        
         self.stoichiometry = [r.get_stoichiometry_matrix_row(self.internal_reactants) for r in self.reactions]
         self.stoichiometry = np.vstack(self.stoichiometry).T
+        
         self.rates = rates
         self.rate_laws = [r.build_rate_law(self.internal_reactants) for r in self.reactions]
 
@@ -113,12 +121,38 @@ class ReactionNetwork:
         string = ReactionNetwork.string_from_stoichiometry(left_stoichiometry, right_stoichiometry, variables)
         return ReactionNetwork(string, rates, external_reactants=external_reactants)
 
+    def print_ode_system(self, rate_names=None):
+        if rate_names is None:
+            rate_names = [f"k_{i}" for i in range(len(self.rates))]
+        equations = [r.lower() + "'=" for r in self.internal_reactants]
+        for i, reaction in enumerate(self.reactions):
+            term = rate_names[i]
+            for reactant in self.internal_reactants:
+                order = reaction.left.stoichiometry[reactant]
+                if order == 0:
+                    continue
+                term += reactant.lower()
+                if order > 1:
+                    term += '^' + str(order)
+            if term == rate_names[i]:
+                raise ValueError(f"No reactants in term for reaction {reaction.__repr__()}")
+            for j in range(len(equations)):
+                multiplicity = reaction.stoichiometry[self.internal_reactants[j]]
+                if multiplicity == 0:
+                    continue
+                equations[j] += '+' if multiplicity > 0 else '-'
+                if abs(multiplicity) != 1:
+                    equations[j] += str(abs(multiplicity))
+                equations[j] += term
+        return '\n'.join(equations)
+
     def __eq__(self, other):
         for r in self.reactions:
             matching_reactions = [other_r for other_r in other.reactions if other_r == r]
             if len(matching_reactions) != 1:
                 return False
         return True
+
 
 class XSReactionNetwork(ReactionNetwork):
     """

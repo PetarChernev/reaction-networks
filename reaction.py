@@ -39,6 +39,12 @@ class Reaction:
     def get_stoichiometry_matrix_row(self, all_reactants):
         return [self.stoichiometry[r] for r in all_reactants]
 
+    def get_left_stoichiometry_matrix_row(self, all_reactants):
+        return [self.left.stoichiometry[r] for r in all_reactants]
+
+    def get_right_stoichiometry_matrix_row(self, all_reactants):
+        return [self.right.stoichiometry[r] for r in all_reactants]
+
     @staticmethod
     def expand_powers(formula: str):
         return re.sub(r"(\d+)([A-Z])", lambda m: ' + '.join(m.group(2)*int(m.group(1))), formula)

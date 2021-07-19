@@ -1,8 +1,10 @@
+"""
+Implements functionality to build a reaction network from a system of ODEs.
+"""
 from typing import List
 import re
 
 from multiset import FrozenMultiset
-import numpy as np
 
 from reaction_network.abstract import ReactionNetwork
 
@@ -44,8 +46,15 @@ class ODESystem:
         )
 
 
-
 class VariableDynamics:
+    r"""
+    Represents an ODE of the form \dot a_i(t) = \sum_{j=1}^p k_j \prod_{m=1}^n a_m(t).
+    For this implementation, the variables a_i and coefficients k_i are single lowercase characters ('a', 'b', etc.)
+    Example:
+        \dot a(t) = kba - nc
+
+    TODO: Currently does not support higher orders powers of the variables (eg. no kb^2a).
+    """
     def __init__(self, variable, right_hand_side, variables_names):
         self.variable = variable.strip("'")
         self.right_hand_side = right_hand_side
@@ -93,5 +102,6 @@ class Term:
 
 
 if __name__ == '__main__':
+    from printer import string_reaction_network_to_ode_system
     self = ODESystem("s'=-ksx+ns\nx'=ksx-mx", ['s', 'x'])
-    print(self.to_reaction_network())
+    print(string_reaction_network_to_ode_system(self.to_reaction_network(), ['k', 'n', 'm']))

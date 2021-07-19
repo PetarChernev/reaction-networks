@@ -41,6 +41,10 @@ class ReactionNetwork:
         self.ode_rhs = self.build_ode_rhs()
 
     def build_ode_rhs(self):
+        r"""
+        Builds the right hand sides of the system of ODEs corresponding to the ReactionNetwork.
+        :return: (Callable[[float, np.array], np.array]) f(t, \vec a(t)) -> k_j \varphi_j(t)
+        """
         def rhs(t, masses):
             flow_rates = [rate_law(masses) for rate_law in self.rate_laws]
             return self.stoichiometry.dot(flow_rates)
@@ -85,10 +89,17 @@ class ReactionNetwork:
         plt.show()
 
     def constant(self, masses):
+        """
+        Implements a first integral of a particular ReactionNetwork as a function of the masses.
+        """
         raise NotImplementedError()
 
     @staticmethod
     def string_from_stoichiometry(left_stoichiometry, right_stoichiometry, variables):
+        """
+        Builds a string that is a valid input to the ReactionNetwork.__init__ from the left and right stoichiometry
+        matrices.
+        """
         reactions = []
         for row in range(len(left_stoichiometry)):
             left_side = []
@@ -121,6 +132,17 @@ class ReactionNetwork:
 
     @staticmethod
     def from_stoichiometry(left_stoichiometry, right_stoichiometry, variables, external_reactants, rates):
+        """
+        Builds a ReactionNetwork object from the left and right stoichiometry matrices.
+        :param left_stoichiometry: (np.array)
+        :param right_stoichiometry: (np.array)
+        :param variables: (List[str]) the names of the variables as they are ordered in the columns of the matrices.
+        :param external_reactants: (Set[str]) the names of any external reactants, whose masses are not taken into
+        account in the dynamic system.
+        :param rates: (List[int]) the values of the reaction rates of the reactions are they are ordered in the rows
+        of the matrices.
+        :return: (ReactionNetwork)
+        """
         string = ReactionNetwork.string_from_stoichiometry(left_stoichiometry, right_stoichiometry, variables)
         return ReactionNetwork(string, rates, external_reactants=external_reactants)
 

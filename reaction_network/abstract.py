@@ -11,6 +11,7 @@ from reaction import Reaction
 class ReactionNetwork:
     # abstract
     INTERNAL_REACTANTS_NUM = None
+    RATE_NAMES = None
 
     def __init__(self, formula, rates, sep=';\n', external_reactants=None):
         self.external_reactants = set(external_reactants) if external_reactants is not None else set()
@@ -53,8 +54,10 @@ class ReactionNetwork:
 
     def plot(self, solution, show=True, **kwargs):
         for i in range(len(self.internal_reactants)):
-            plt.plot(solution.t, solution.y[i, :], label=self.internal_reactants[i], **kwargs)
+            plt.plot(solution.t, solution.y[i, :], label=f"${self.internal_reactants[i].lower()}(t)$", **kwargs)
         plt.legend()
+        plt.gca().set_xlabel(r'$t$')
+        plt.gca().set_ylabel(r'$a_i(t)$', rotation=0)
         if show:
             plt.show()
 
@@ -121,30 +124,7 @@ class ReactionNetwork:
         string = ReactionNetwork.string_from_stoichiometry(left_stoichiometry, right_stoichiometry, variables)
         return ReactionNetwork(string, rates, external_reactants=external_reactants)
 
-    def print_ode_system(self, rate_names=None):
-        if rate_names is None:
-            rate_names = [f"k_{i}" for i in range(len(self.rates))]
-        equations = [r.lower() + "'=" for r in self.internal_reactants]
-        for i, reaction in enumerate(self.reactions):
-            term = rate_names[i]
-            for reactant in self.internal_reactants:
-                order = reaction.left.stoichiometry[reactant]
-                if order == 0:
-                    continue
-                term += reactant.lower()
-                if order > 1:
-                    term += '^' + str(order)
-            if term == rate_names[i]:
-                raise ValueError(f"No reactants in term for reaction {reaction.__repr__()}")
-            for j in range(len(equations)):
-                multiplicity = reaction.stoichiometry[self.internal_reactants[j]]
-                if multiplicity == 0:
-                    continue
-                equations[j] += '+' if multiplicity > 0 else '-'
-                if abs(multiplicity) != 1:
-                    equations[j] += str(abs(multiplicity))
-                equations[j] += term
-        return '\n'.join(equations)
+
 
     def __eq__(self, other):
         for r in self.reactions:
@@ -153,14 +133,24 @@ class ReactionNetwork:
                 return False
         return True
 
+    @property
+    def label(self):
+        name = type(self).__name__.replace('ReactionNetwork', '')
+        if self.RATE_NAMES is not None:
+            rates = {self.RATE_NAMES[i]: self.rates[i] for i in range(len(self.rates))}
+            rates_str = f""" (${', '.join(rate_name + '=' + str(rate_value)
+                                          for rate_name, rate_value in rates.items())}$)"""
+            rates_str = re.sub(r'0+[1-9]', '', rates_str)
+        else:
+            rates_str = ''
+        return name + rates_str
+
 
 class XSReactionNetwork(ReactionNetwork):
     """
     Implements a reaction network with 2 internal reactants - X and S. The X reactant is the one we are most interested
     in, while the S one is some sort of a control over the X one (food source, catalyst, etc.)
     """
-    RATE_NAMES = None
-
     def __init__(self, formula, rates, sep=';\n', external_reactants=None):
         if self.RATE_NAMES is not None:
             assert len(rates) == len(self.RATE_NAMES)
@@ -178,14 +168,3 @@ class XSReactionNetwork(ReactionNetwork):
         if show:
             plt.show()
 
-    @property
-    def label(self):
-        name = type(self).__name__.replace('ReactionNetwork', '')
-        if self.RATE_NAMES is not None:
-            rates = {self.RATE_NAMES[i]: self.rates[i] for i in range(len(self.rates))}
-            rates_str = f""" (${', '.join(rate_name + '=' + str(rate_value)
-                                          for rate_name, rate_value in rates.items())}$)"""
-            rates_str = re.sub(r'0+[1-9]', '', rates_str)
-        else:
-            rates_str = ''
-        return name + rates_str

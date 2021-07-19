@@ -124,8 +124,6 @@ class ReactionNetwork:
         string = ReactionNetwork.string_from_stoichiometry(left_stoichiometry, right_stoichiometry, variables)
         return ReactionNetwork(string, rates, external_reactants=external_reactants)
 
-
-
     def __eq__(self, other):
         for r in self.reactions:
             matching_reactions = [other_r for other_r in other.reactions if other_r == r]

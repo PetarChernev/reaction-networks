@@ -5,9 +5,9 @@ from reaction_network.abstract import ReactionNetwork
 
 class GompertzBatemanReactionNetwork(ReactionNetwork):
     REACTIONS = """
-           P + X -> 2X + P;
-           S -> P;
-           P -> Q;
+           P + X -> 2X + P
+           S -> P
+           P -> Q
        """
 
     RATE_NAMES = ['k', r'k_1', r'k_2']
@@ -25,9 +25,9 @@ class GompertzBatemanReactionNetwork(ReactionNetwork):
 
 class ModifiedGompertzBatemanReactionNetwork(ReactionNetwork):
     REACTIONS = """
-           P + X -> 2X + P;
-           S -> P;
-           P -> X;
+           P + X -> 2X + P
+           S -> P
+           P -> X
        """
 
     RATE_NAMES = ['k', r'k_1', r'k_2']

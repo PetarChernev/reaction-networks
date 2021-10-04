@@ -4,7 +4,7 @@ import numpy as np
 
 class MixedReactionNetwork(XSReactionNetwork):
     REACTIONS = """
-        S + X -> 2X + S;
+        S + X -> 2X + S
         S -> X
     """
     RATE_NAMES = ['k', r'\nu']

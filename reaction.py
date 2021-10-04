@@ -32,7 +32,7 @@ class Reaction:
             result = self.rate
             for r in all_reactants:
                 if r in self.left.reactant_set:
-                    result *= masses[all_reactants.index(r)] ** self.left.stoichiometry[r]
+                    result *= masses[all_reactants.index(r)] ** int(self.left.stoichiometry[r])
             return result
         return rate_law
 

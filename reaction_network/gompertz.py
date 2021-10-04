@@ -4,7 +4,7 @@ import numpy as np
 
 class GompertzReactionNetwork(XSReactionNetwork):
     REACTIONS = """
-        S + X -> 2X + S;
+        S + X -> 2X + S
         S -> Q
     """
 

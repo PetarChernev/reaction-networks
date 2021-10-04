@@ -13,7 +13,7 @@ class ReactionNetwork:
     INTERNAL_REACTANTS_NUM = None
     RATE_NAMES = None
 
-    def __init__(self, formula, rates, sep=';\n', external_reactants=None):
+    def __init__(self, formula, rates, sep='\n', external_reactants=None, rate_names=None):
         self.external_reactants = set(external_reactants) if external_reactants is not None else set()
 
         lines = [line.strip() for line in re.split(f"[{sep}]", formula) if line.strip()]
@@ -27,16 +27,22 @@ class ReactionNetwork:
             assert len(self.internal_reactants) == self.INTERNAL_REACTANTS_NUM
 
         self.left_stoichiometry = [r.get_left_stoichiometry_matrix_row(self.internal_reactants) for r in self.reactions]
-        self.left_stoichiometry = np.vstack(self.left_stoichiometry).T
+        self.left_stoichiometry = np.vstack(self.left_stoichiometry)
         
         self.right_stoichiometry = [r.get_right_stoichiometry_matrix_row(self.internal_reactants) for r in self.reactions]
-        self.right_stoichiometry = np.vstack(self.right_stoichiometry).T
+        self.right_stoichiometry = np.vstack(self.right_stoichiometry)
         
         self.stoichiometry = [r.get_stoichiometry_matrix_row(self.internal_reactants) for r in self.reactions]
-        self.stoichiometry = np.vstack(self.stoichiometry).T
+        self.stoichiometry = np.vstack(self.stoichiometry)
         
         self.rates = rates
         self.rate_laws = [r.build_rate_law(self.internal_reactants) for r in self.reactions]
+        if rate_names is not None:
+            self.rate_names = rate_names
+        elif self.RATE_NAMES is not None:
+            self.rate_names = self.RATE_NAMES
+        else:
+            self.rate_names = [f'k_{i}' for i in range(1, len(rates) + 1)]
 
         self.ode_rhs = self.build_ode_rhs()
 
@@ -47,7 +53,7 @@ class ReactionNetwork:
         """
         def rhs(t, masses):
             flow_rates = [rate_law(masses) for rate_law in self.rate_laws]
-            return self.stoichiometry.dot(flow_rates)
+            return self.stoichiometry.T.dot(flow_rates)
         return rhs
 
     def vectorized_ode_rhs(self, t_arr, mass_arr):
@@ -130,8 +136,18 @@ class ReactionNetwork:
         reactions = '\n'.join(reactions)
         return reactions
 
+    def __repr__(self):
+        return self.string_from_stoichiometry(self.left_stoichiometry,
+                                              self.right_stoichiometry,
+                                              self.internal_reactants)
+
     @staticmethod
-    def from_stoichiometry(left_stoichiometry, right_stoichiometry, variables, external_reactants, rates):
+    def from_stoichiometry(left_stoichiometry,
+                           right_stoichiometry,
+                           variables,
+                           external_reactants,
+                           rates,
+                           rate_names=None):
         """
         Builds a ReactionNetwork object from the left and right stoichiometry matrices.
         :param left_stoichiometry: (np.array)
@@ -141,10 +157,11 @@ class ReactionNetwork:
         account in the dynamic system.
         :param rates: (List[int]) the values of the reaction rates of the reactions are they are ordered in the rows
         of the matrices.
+        :param rate_names: (List[str]) the variable names of the rate parameters. Can be valid LaTeX
         :return: (ReactionNetwork)
         """
         string = ReactionNetwork.string_from_stoichiometry(left_stoichiometry, right_stoichiometry, variables)
-        return ReactionNetwork(string, rates, external_reactants=external_reactants)
+        return ReactionNetwork(string, rates, external_reactants=external_reactants, rate_names=rate_names)
 
     def __eq__(self, other):
         for r in self.reactions:
@@ -171,7 +188,7 @@ class XSReactionNetwork(ReactionNetwork):
     Implements a reaction network with 2 internal reactants - X and S. The X reactant is the one we are most interested
     in, while the S one is some sort of a control over the X one (food source, catalyst, etc.)
     """
-    def __init__(self, formula, rates, sep=';\n', external_reactants=None):
+    def __init__(self, formula, rates, sep='\n', external_reactants=None):
         if self.RATE_NAMES is not None:
             assert len(rates) == len(self.RATE_NAMES)
         super().__init__(formula, rates, sep, external_reactants)

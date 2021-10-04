@@ -64,3 +64,16 @@ def latex_reaction_network_to_ode_system(reaction_network, rate_names=None):
     output = r'\\ '.join(equations)
     output = re.sub(r'= \+', '=', output)
     return output
+
+
+def latex_reaction_network(reaction_network):
+    """
+    Generates valid LaTeX for an align environment.
+    """
+    lines = []
+    for reaction, rate_name in zip(reaction_network.reactions, reaction_network.rate_names):
+        line = reaction.__repr__()
+        line = line.replace('->', rf"&\xrightarrow{{{rate_name}}}")
+        lines.append(line)
+    return '\\\\\n'.join(lines)
+

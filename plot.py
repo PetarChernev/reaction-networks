@@ -158,6 +158,15 @@ def plot_xsnetwork_crosses_by_last_rate(xsnetwork_cls_1,
     plt.show()
 
 
+def plot_xs_state_space_trajectories(reaction_network, initial_conditions_list, max_t=30):
+    for initial_conditions in initial_conditions_list:
+        solution = reaction_network.solve_ivp(initial_conditions, max_t)
+        plt.plot(*solution.y, label=str(initial_conditions[1]))
+    plt.xlabel('$s$')
+    plt.ylabel('$x$')
+    plt.show()
+
+
 if __name__ == '__main__':
     # network = LogisticReactionNetwork([1])
     # plot_state_space(network, 1, 10, 1, 10, 10)

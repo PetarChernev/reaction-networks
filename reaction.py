@@ -10,7 +10,7 @@ class Reaction:
         self.formula = formula
         self.rate = rate
 
-        left, right = self.expand_powers(formula).split('->')
+        left, right = formula.split('->')
         self.left = LeftHandSide(left)
         if external_reactants.intersection(self.left.reactant_set):
             raise ValueError("External reactant in left hand side.")
@@ -18,8 +18,7 @@ class Reaction:
 
         self.reactant_set = set(self.left.reactants).union(set(self.right.reactants))
 
-        self.stoichiometry = copy(self.right.stoichiometry)
-        self.stoichiometry.subtract(self.left.stoichiometry)
+        self.stoichiometry = self.right.stoichiometry - self.left.stoichiometry
 
     def __repr__(self):
         return self.formula
@@ -32,7 +31,7 @@ class Reaction:
             result = self.rate
             for r in all_reactants:
                 if r in self.left.reactant_set:
-                    result *= masses[all_reactants.index(r)] ** int(self.left.stoichiometry[r])
+                    result *= masses[all_reactants.index(r)] ** float(self.left.stoichiometry[r])
             return result
         return rate_law
 
@@ -44,10 +43,6 @@ class Reaction:
 
     def get_right_stoichiometry_matrix_row(self, all_reactants):
         return [self.right.stoichiometry[r] for r in all_reactants]
-
-    @staticmethod
-    def expand_powers(formula: str):
-        return re.sub(r"(\d+)([A-Z])", lambda m: ' + '.join(m.group(2)*int(m.group(1))), formula)
 
     def __eq__(self, other):
         return self.left == other.left and self.right == other.right

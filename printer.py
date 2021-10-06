@@ -49,7 +49,7 @@ def latex_reaction_network_to_ode_system(reaction_network, rate_names=None):
             if order == 0:
                 continue
             term += reactant.lower()
-            if order > 1:
+            if order != 1:
                 term += '^{' + str(order) + '}'
         if term == rate_names[i]:
             raise ValueError(f"No reactants in term for reaction {reaction.__repr__()}")

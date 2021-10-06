@@ -1,11 +1,20 @@
-from collections import Counter
+import re
+
+from stoichiometry import Stoichiometry
 
 
 class HandSide:
     def __init__(self, formula: str):
-        self.reactants = [r.strip() for r in formula.strip().split('+')]
+        self.stoichiometry = Stoichiometry()
+        for term in formula.strip().split('+'):
+            term = term.strip()
+            match = re.match(r'(\d*\.?\d*)([A-Z])', term)
+            coef = match.group(1)
+            if not coef:
+                coef = 1
+            self.stoichiometry[match.group(2)] = float(coef)
+        self.reactants = list(self.stoichiometry.keys())
         self.reactant_set = set(self.reactants)
-        self.stoichiometry = Counter(self.reactants)
         self.formula = formula
 
     def __repr__(self):
